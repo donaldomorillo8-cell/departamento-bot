@@ -189,7 +189,7 @@
                 <p style="color: var(--text-muted); margin: 5px 0 0 0;">Configuración en vivo sincronizada con Discord</p>
             </div>
             <div class="header-buttons">
-                <a href="https://discord.com/oauth2/authorize?client_id=1517022243962490880&response_type=token&redirect_uri=http%3A%2F%2Flocalhost%3A5500&scope=identify" class="btn-discord-login" id="login-btn">
+                <a href="#" class="btn-discord-login" id="login-btn">
                     Sincronizar Discord
                 </a>
                 <a href="https://discord.com/oauth2/authorize?client_id=1517022243962490880&permissions=8&integration_type=0&scope=bot" target="_blank" class="btn-invite">🔗 Invitar Bot</a>
@@ -304,6 +304,14 @@
     </div>
 
     <script>
+        // CONFIGURACIÓN DE URL DE REDIRECCIÓN AUTOMÁTICA
+        const MI_URL_VERCEL = "https://departamento-bot.vercel.app";
+        const clientID = "1517022243962490880";
+        const redirectUri = encodeURIComponent(MI_URL_VERCEL);
+        
+        // Genera el enlace de OAuth2 correcto al cargar la página
+        document.getElementById('login-btn').href = `https://discord.com/oauth2/authorize?client_id=${clientID}&response_type=token&redirect_uri=${redirectUri}&scope=identify`;
+
         // LÓGICA DE INICIO DE SESIÓN EN VIVO CON DISCORD
         window.onload = function() {
             const fragment = new URLSearchParams(window.location.hash.slice(1));
@@ -330,6 +338,9 @@
                     loginBtn.innerText = "Cuenta Vinculada";
                     loginBtn.style.background = "#248046";
                     loginBtn.href = "#";
+
+                    // Limpiar el access_token de la barra de direcciones por estética y seguridad
+                    history.pushState("", document.title, window.location.pathname + window.location.search);
                 })
                 .catch(err => console.error("Error al conectar con Discord API:", err));
             }
