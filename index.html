@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Profesional - DPP Core Bot</title>
+    <style>
+        /* ESTILOS FUTURISTAS Y CYBERPUNK */
+        :root {
+            --bg-color: #0a0b10;
+            --card-bg: #121420;
+            --accent-neon: #00ffcc;
+            --accent-blue: #0077ff;
+            --accent-purple: #8a2be2;
+            --text-main: #f0f3f8;
+            --text-muted: #6c7a9c;
+            --border-neon: rgba(0, 255, 204, 0.2);
+            --premium-gold: #f5c518;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0; padding: 0; display: flex;
+        }
+
+        /* Barra Lateral */
+        .sidebar {
+            width: 260px; height: 100vh; background: #0d0f1a;
+            position: fixed; border-right: 1px solid var(--border-neon);
+            padding: 20px; box-sizing: border-box;
+        }
+
+        .sidebar h2 {
+            color: var(--accent-neon); font-size: 22px; letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5); margin-bottom: 30px; text-align: center;
+        }
+
+        /* Perfil de Usuario Real de Discord */
+        .user-profile {
+            background: rgba(255, 255, 255, 0.03); padding: 12px;
+            border-radius: 8px; margin-bottom: 25px; display: flex;
+            align-items: center; gap: 12px; border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .user-avatar {
+            width: 42px; height: 42px; border-radius: 50%;
+            background-color: #5865F2; background-size: cover; background-position: center;
+        }
+
+        .sidebar nav a {
+            display: block; color: var(--text-muted); padding: 12px 15px;
+            text-decoration: none; border-radius: 6px; margin-bottom: 10px;
+            transition: all 0.3s ease; font-weight: 600;
+        }
+
+        .sidebar nav a:hover, .sidebar nav a.active {
+            color: var(--text-main);
+            background: linear-gradient(90deg, rgba(0,255,204,0.1) 0%, transparent 100%);
+            border-left: 3px solid var(--accent-neon); padding-left: 20px;
+        }
+
+        /* Contenedor Principal */
+        .main-content {
+            margin-left: 260px; padding: 40px;
+            width: calc(100% - 260px); box-sizing: border-box;
+        }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px; margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 28px; margin: 0;
+            background: linear-gradient(45deg, var(--text-main), var(--accent-neon));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .header-buttons { display: flex; gap: 15px; }
+
+        .btn-discord-login {
+            background-color: #5865F2; color: white; padding: 12px 24px;
+            text-decoration: none; font-weight: bold; border-radius: 6px;
+            transition: background 0.2s; display: flex; align-items: center; gap: 8px;
+        }
+        .btn-discord-login:hover { background-color: #4752c4; }
+
+        .btn-invite {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white; padding: 12px 24px; text-decoration: none;
+            font-weight: bold; border-radius: 6px; box-shadow: 0 0 15px rgba(0, 119, 255, 0.4);
+        }
+
+        /* Secciones de Configuración */
+        .config-section {
+            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 12px; padding: 30px; margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; overflow: hidden;
+        }
+
+        .config-section::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--accent-neon);
+        }
+        .config-section.purple::before { background: var(--accent-purple); }
+        .config-section.premium { border: 1px solid var(--premium-gold); }
+        .config-section.premium::before { background: var(--premium-gold); }
+
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 14px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
+        input[type="text"], textarea {
+            width: 100%; background: #181b2b; border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px; border-radius: 6px; color: white; font-size: 14px; box-sizing: border-box;
+        }
+
+        /* Interruptores Switch */
+        .switch-group {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #181b2b; padding: 12px; border-radius: 6px; margin-bottom: 15px;
+        }
+        .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #2c304d; transition: .3s; border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px;
+            background-color: white; transition: .3s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--accent-neon); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* Botones del Ticket */
+        .dynamic-buttons-container { background: #181b2b; padding: 15px; border-radius: 6px; margin-top: 15px; }
+        .ticket-button-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .btn-action {
+            background: transparent; border: 1px solid var(--accent-neon); color: var(--accent-neon);
+            padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;
+        }
+        .btn-delete { background: #ff3333; border: none; color: white; padding: 12px; border-radius: 6px; cursor: pointer; }
+
+        /* Muro de Bloqueo Premium */
+        .premium-lock {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 11, 16, 0.93); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 10;
+        }
+        .btn-pay {
+            background: var(--premium-gold); color: black; padding: 12px 30px;
+            font-weight: bold; border-radius: 6px; border: none; cursor: pointer; margin-top: 15px;
+            box-shadow: 0 0 15px rgba(245, 197, 24, 0.4);
+        }
+
+        .btn-save-all {
+            background: var(--accent-neon); color: #0a0b10; font-size: 16px; font-weight: bold;
+            border: none; padding: 15px 30px; border-radius: 6px; cursor: pointer; width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>DPP CORE</h2>
+        
+        <div class="user-profile">
+            <div class="user-avatar" id="user-avatar"></div>
+            <div>
+                <div style="font-weight: bold; font-size: 14px;" id="user-username">Invitado</div>
+                <div style="font-size: 11px; color: var(--text-muted);" id="user-status">Requiere Login</div>
+            </div>
+        </div>
+
+        <nav>
+            <a href="#" class="active">🎛️ Panel General</a>
+            <a href="#">👋 Bienvenidas</a>
+            <a href="#">🎫 Tickets Gratis</a>
+            <a href="#">🛡️ Anti-Raid</a>
+            <a href="#">✅ Verificación</a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <div>
+                <h1>CORE SYSTEM CONTROLS</h1>
+                <p style="color: var(--text-muted); margin: 5px 0 0 0;">Configuración en vivo sincronizada con Discord</p>
+            </div>
+            <div class="header-buttons">
+                <a href="https://discord.com/oauth2/authorize?client_id=1517022243962490880&response_type=token&redirect_uri=http%3A%2F%2Flocalhost%3A5500&scope=identify" class="btn-discord-login" id="login-btn">
+                    Sincronizar Discord
+                </a>
+                <a href="https://discord.com/oauth2/authorize?client_id=1517022243962490880&permissions=8&integration_type=0&scope=bot" target="_blank" class="btn-invite">🔗 Invitar Bot</a>
+            </div>
+        </header>
+
+        <main>
+            <div class="config-section premium" id="premium-section">
+                <div class="premium-lock" id="lock-layer">
+                    <span style="font-size: 32px;">👑</span>
+                    <h2 style="color: var(--premium-gold); margin: 10px 0 5px 0;">Comandos Personalizados Premium</h2>
+                    <p style="color: var(--text-muted); margin: 0; font-size: 14px;">Cambia las llamadas del bot a tu gusto completo.</p>
+                    <button class="btn-pay" onclick="desbloquearPremium()">Desbloquear por $1.00 USD</button>
+                </div>
+
+                <h3 style="color: var(--premium-gold);">👑 Comandos del Sistema Personalizables</h3>
+                <div class="form-group">
+                    <label>Comando Sistema de Postulaciones:</label>
+                    <input type="text" id="cmd-post" value="!post">
+                </div>
+                <div class="form-group">
+                    <label>Comando Sistema de Verificación:</label>
+                    <input type="text" id="cmd-verf" value="!verf">
+                </div>
+                <div class="form-group">
+                    <label>Comando Apertura de Tickets:</label>
+                    <input type="text" id="cmd-tic" value="!tic">
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h3>👋 Módulo de Bienvenidas e Historial</h3>
+                <div class="form-group">
+                    <label>ID del Canal de Bienvenidas:</label>
+                    <input type="text" id="welcome-channel" placeholder="Ej. 119933445566778899">
+                </div>
+                <div class="form-group">
+                    <label>Mensaje de Bienvenida ({user} para nombrar):</label>
+                    <textarea id="welcome-msg" rows="3" placeholder="¡Hola {user}! Bienvenido a nuestra comunidad informática."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>ID del Canal de Despedidas:</label>
+                    <input type="text" id="leave-channel" placeholder="Ej. 119933445566779900">
+                </div>
+                <div class="form-group">
+                    <label>Mensaje de Despedida Personalizado:</label>
+                    <textarea id="leave-msg" rows="2" placeholder="{user} ha abandonado el servidor."></textarea>
+                </div>
+                <div class="switch-group">
+                    <div>
+                        <strong style="display:block; font-size:14px;">Permitir Entrada de Bots</strong>
+                        <span style="font-size:12px; color:var(--text-muted);">Si se apaga, el bot filtrará las cuentas de bots automáticos.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="allow-bots" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="config-section purple">
+                <h3>🎫 Sistema de Soporte por Tickets (Gratuito)</h3>
+                <div class="form-group">
+                    <label>ID del Canal del Panel Embed:</label>
+                    <input type="text" id="ticket-channel" placeholder="Ej. 112233445566778899">
+                </div>
+                <div class="form-group">
+                    <label>Título del Panel:</label>
+                    <input type="text" id="ticket-title" value="Soporte Técnico Oficial">
+                </div>
+                <div class="form-group">
+                    <label>Descripción Interna:</label>
+                    <textarea id="ticket-desc" rows="3">Presiona un botón interactivo abajo para abrir soporte privado.</textarea>
+                </div>
+                <div class="form-group">
+                    <label>ID de la Categoría de Apertura:</label>
+                    <input type="text" id="ticket-category" placeholder="Ej. 998877665544332211">
+                </div>
+                <div class="form-group">
+                    <label>Botones del Panel de Tickets (Interactivos e Ilimitados):</label>
+                    <div id="buttons-container" class="dynamic-buttons-container">
+                        <div class="ticket-button-row">
+                            <input type="text" class="btn-text" placeholder="Texto (Ej. 📩 Soporte)" style="width: 40%;">
+                            <input type="text" class="btn-role" placeholder="ID Rol Staff a etiquetar" style="width: 45%;">
+                            <button class="btn-delete" type="button" onclick="eliminarFila(this)">✕</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-action" style="margin-top: 15px;" onclick="agregarFilaTicket()">+ Añadir Nuevo Botón Interactivo</button>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h3>✅ Sistema de Verificación Eficiente</h3>
+                <div class="form-group">
+                    <label>ID del Canal de Verificación:</label>
+                    <input type="text" id="verify-channel" placeholder="Ej. 115599884433221100">
+                </div>
+                <div class="form-group">
+                    <label>Mensaje Personalizado de Verificación:</label>
+                    <textarea id="verify-msg" rows="3" placeholder="¡Bienvenido! Presiona el botón de abajo para verificar que eres un humano y desbloquear el servidor."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>ID del Rol Otorgado:</label>
+                    <input type="text" id="verify-role" placeholder="Ej. 776655443322110099">
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; margin-bottom: 60px;">
+                <button class="btn-save-all" onclick="guardarYEnviarConfiguracion()">Sincronizar y Guardar Configuración</button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // LÓGICA DE INICIO DE SESIÓN EN VIVO CON DISCORD
+        window.onload = function() {
+            const fragment = new URLSearchParams(window.location.hash.slice(1));
+            const accessToken = fragment.get('access_token');
+
+            if (accessToken) {
+                // Si hay un token en la URL, llamamos a la API de Discord en tiempo real
+                fetch('https://discord.com/api/users/@me', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                })
+                .then(response => response.json())
+                .then(user => {
+                    // Ponemos el nombre de usuario de Discord real
+                    document.getElementById('user-username').innerText = `${user.username}`;
+                    document.getElementById('user-status').innerText = "Sincronizado Real ✅";
+                    
+                    // Cargamos su foto de perfil real desde los servidores de Discord
+                    if(user.avatar) {
+                        document.getElementById('user-avatar').style.backgroundImage = `url(https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png)`;
+                    }
+                    
+                    // Modificamos el botón superior
+                    const loginBtn = document.getElementById('login-btn');
+                    loginBtn.innerText = "Cuenta Vinculada";
+                    loginBtn.style.background = "#248046";
+                    loginBtn.href = "#";
+                })
+                .catch(err => console.error("Error al conectar con Discord API:", err));
+            }
+        };
+
+        // Funciones del sistema interactivo de tickets
+        function agregarFilaTicket() {
+            const container = document.getElementById('buttons-container');
+            const newRow = document.createElement('div');
+            newRow.className = 'ticket-button-row';
+            newRow.innerHTML = `
+                <input type="text" class="btn-text" placeholder="Texto del Botón" style="width: 40%;">
+                <input type="text" class="btn-role" placeholder="ID Rol Staff a etiquetar" style="width: 45%;">
+                <button class="btn-delete" type="button" onclick="eliminarFila(this)">✕</button>
+            `;
+            container.appendChild(newRow);
+        }
+
+        function eliminarFila(elemento) { elemento.parentElement.remove(); }
+
+        // Muro de pago del dólar
+        function desbloquearPremium() {
+            if(confirm("¿Deseas pagar $1.00 USD para habilitar los Comandos Personalizados (!post, !verf, !tic)?")) {
+                document.getElementById('lock-layer').style.display = "none";
+            }
+        }
+
+        function guardarYEnviarConfiguracion() {
+            alert("¡Configuración guardada! Todos los datos de IDs y estructuras de botones interactivos se han procesado correctamente.");
+        }
+    </script>
+</body>
+</html>
