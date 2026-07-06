@@ -29,12 +29,22 @@
         .sidebar {
             width: 260px; height: 100vh; background: #0d0f1a;
             position: fixed; border-right: 1px solid var(--border-neon);
-            padding: 20px; box-sizing: border-box;
+            padding: 20px; box-sizing: border-box; display: flex; flex-direction: column;
         }
 
         .sidebar h2 {
             color: var(--accent-neon); font-size: 22px; letter-spacing: 2px;
-            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5); margin-bottom: 30px; text-align: center;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5); margin-bottom: 20px; text-align: center;
+        }
+
+        /* Selector de Servidores */
+        .server-select-container {
+            margin-bottom: 20px;
+        }
+        .server-select {
+            width: 100%; background: #181b2b; border: 1px solid var(--accent-neon);
+            color: white; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;
+            outline: none;
         }
 
         /* Perfil de Usuario Real de Discord */
@@ -48,6 +58,8 @@
             width: 42px; height: 42px; border-radius: 50%;
             background-color: #5865F2; background-size: cover; background-position: center;
         }
+
+        .sidebar nav { flex-grow: 1; }
 
         .sidebar nav a {
             display: block; color: var(--text-muted); padding: 12px 15px;
@@ -164,6 +176,13 @@
 
     <div class="sidebar">
         <h2>DPP CORE</h2>
+        
+        <div class="server-select-container" id="server-box" style="display: none;">
+            <label>Seleccionar Servidor:</label>
+            <select id="server-select" class="server-select" onchange="cambiarServidorActual()">
+                <option value="">Cargando servidores...</option>
+            </select>
+        </div>
         
         <div class="user-profile">
             <div class="user-avatar" id="user-avatar"></div>
@@ -304,49 +323,81 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN DE URL DE REDIRECCIÓN AUTOMÁTICA
         const MI_URL_VERCEL = "https://departamento-bot.vercel.app";
         const clientID = "1517022243962490880";
         const redirectUri = encodeURIComponent(MI_URL_VERCEL);
         
-        // Genera el enlace de OAuth2 correcto al cargar la página
-        document.getElementById('login-btn').href = `https://discord.com/oauth2/authorize?client_id=${clientID}&response_type=token&redirect_uri=${redirectUri}&scope=identify`;
+        // AUTORIZACIÓN MEJORADA CON ACCESO A SERVIDORES (GUILDS)
+        document.getElementById('login-btn').href = `https://discord.com/oauth2/authorize?client_id=${clientID}&response_type=token&redirect_uri=${redirectUri}&scope=identify+guilds`;
 
-        // LÓGICA DE INICIO DE SESIÓN EN VIVO CON DISCORD
         window.onload = function() {
             const fragment = new URLSearchParams(window.location.hash.slice(1));
             const accessToken = fragment.get('access_token');
 
             if (accessToken) {
-                // Si hay un token en la URL, llamamos a la API de Discord en tiempo real
+                // 1. Obtener Datos de Usuario
                 fetch('https://discord.com/api/users/@me', {
                     headers: { 'Authorization': `Bearer ${accessToken}` }
                 })
                 .then(response => response.json())
                 .then(user => {
-                    // Ponemos el nombre de usuario de Discord real
                     document.getElementById('user-username').innerText = `${user.username}`;
                     document.getElementById('user-status').innerText = "Sincronizado Real ✅";
-                    
-                    // Cargamos su foto de perfil real desde los servidores de Discord
                     if(user.avatar) {
                         document.getElementById('user-avatar').style.backgroundImage = `url(https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png)`;
                     }
-                    
-                    // Modificamos el botón superior
                     const loginBtn = document.getElementById('login-btn');
                     loginBtn.innerText = "Cuenta Vinculada";
                     loginBtn.style.background = "#248046";
                     loginBtn.href = "#";
+                    
+                    // Mostrar caja contenedora del selector
+                    document.getElementById('server-box').style.display = 'block';
 
-                    // Limpiar el access_token de la barra de direcciones por estética y seguridad
+                    // 2. Obtener los Servidores donde es Administrador
+                    obtenerServidoresUsuario(accessToken);
+                    
                     history.pushState("", document.title, window.location.pathname + window.location.search);
                 })
-                .catch(err => console.error("Error al conectar con Discord API:", err));
+                .catch(err => console.error("Error Discord API:", err));
             }
         };
 
-        // Funciones del sistema interactivo de tickets
+        function obtenerServidoresUsuario(token) {
+            fetch('https://discord.com/api/users/@me/guilds', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(guilds => {
+                const select = document.getElementById('server-select');
+                select.innerHTML = ''; // Limpiar
+
+                // Filtrar solo los servidores donde tiene permisos de Administrador (0x8)
+                const adminGuilds = guilds.filter(g => (g.permissions & 0x8) === 0x8);
+
+                if(adminGuilds.length === 0) {
+                    select.innerHTML = '<option>No eres admin en ningún server</option>';
+                    return;
+                }
+
+                adminGuilds.forEach(guild => {
+                    const option = document.createElement('option');
+                    option.value = guild.id;
+                    option.innerText = guild.name;
+                    select.appendChild(option);
+                });
+
+                // Cargar datos del primer servidor por defecto
+                cambiarServidorActual();
+            });
+        }
+
+        function cambiarServidorActual() {
+            const serverId = document.getElementById('server-select').value;
+            console.log("Cambiando al servidor ID:", serverId);
+            // Aquí puedes hacer un fetch a tu servidor/base de datos para rellenar los inputs con los datos guardados de este servidor
+        }
+
         function agregarFilaTicket() {
             const container = document.getElementById('buttons-container');
             const newRow = document.createElement('div');
@@ -361,15 +412,36 @@
 
         function eliminarFila(elemento) { elemento.parentElement.remove(); }
 
-        // Muro de pago del dólar
         function desbloquearPremium() {
-            if(confirm("¿Deseas pagar $1.00 USD para habilitar los Comandos Personalizados (!post, !verf, !tic)?")) {
+            if(confirm("¿Deseas pagar $1.00 USD?")) {
                 document.getElementById('lock-layer').style.display = "none";
             }
         }
 
         function guardarYEnviarConfiguracion() {
-            alert("¡Configuración guardada! Todos los datos de IDs y estructuras de botones interactivos se han procesado correctamente.");
+            const serverId = document.getElementById('server-select').value;
+            if(!serverId) return alert("Selecciona un servidor primero.");
+
+            // Recopilar los datos del panel
+            const config = {
+                serverId: serverId,
+                welcomeChannel: document.getElementById('welcome-channel').value,
+                welcomeMsg: document.getElementById('welcome-msg').value,
+                leaveChannel: document.getElementById('leave-channel').value,
+                leaveMsg: document.getElementById('leave-msg').value,
+                allowBots: document.getElementById('allow-bots').checked,
+                ticketChannel: document.getElementById('ticket-channel').value,
+                ticketTitle: document.getElementById('ticket-title').value,
+                ticketDesc: document.getElementById('ticket-desc').value,
+                ticketCategory: document.getElementById('ticket-category').value,
+                verifyChannel: document.getElementById('verify-channel').value,
+                verifyMsg: document.getElementById('verify-msg').value,
+                verifyRole: document.getElementById('verify-role').value,
+            };
+
+            // SIMULACIÓN O ENVÍO A TU BASE DE DATOS/API REAL
+            console.log("Guardando datos:", config);
+            alert("¡Configuración sincronizada con éxito para el servidor seleccionado!");
         }
     </script>
 </body>
